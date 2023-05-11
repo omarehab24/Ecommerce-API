@@ -2,6 +2,7 @@ const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
 const { attachCookiesToResponse, createTokenUser } = require("../utils");
+const crypto = require('crypto')
 
 const register = async (req, res) => {
   // Used unique in user model instead
@@ -16,16 +17,21 @@ const register = async (req, res) => {
   const isFirstAccount = (await User.countDocuments({})) === 0;
   const role = isFirstAccount ? "admin" : "user";
 
-  const user = await User.create({ email, name, password, role });
+  const verificationToken = crypto.randomBytes(40).toString('hex')
 
-  // Create a user token object with specific user info
+  const user = await User.create({ email, name, password, role, verificationToken });
+
+/*   // Create a user token object with specific user info
   const tokenUser = createTokenUser(user);
 
   // const token = createJWT({ payload: tokenUser });
   attachCookiesToResponse({ res, userObj: tokenUser });
 
   // Send tokenUser object instead of the whole user object
-  res.status(StatusCodes.CREATED).json({ user: tokenUser });
+  res.status(StatusCodes.CREATED).json({ user: tokenUser }); */
+
+  // Send verification token back, only while testing in postman
+  res.status(StatusCodes.CREATED).json({msg: "Success! please check your email to verify your account!", verificationToken: user.verificationToken})
 };
 
 const login = async (req, res) => {
@@ -49,6 +55,10 @@ const login = async (req, res) => {
     throw new CustomError.UnauthenticatedError(
       "Please provide a correct email and password!"
     );
+  }
+
+  if (!user.isVerified){
+    throw new CustomError.UnauthenticatedError('Account is not verified, please verify your account!');
   }
 
   const tokenUser = createTokenUser(user);
