@@ -2,7 +2,7 @@ const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
 const { attachCookiesToResponse, createTokenUser } = require("../utils");
-const crypto = require('crypto')
+const crypto = require("crypto");
 
 const register = async (req, res) => {
   // Used unique in user model instead
@@ -17,11 +17,17 @@ const register = async (req, res) => {
   const isFirstAccount = (await User.countDocuments({})) === 0;
   const role = isFirstAccount ? "admin" : "user";
 
-  const verificationToken = crypto.randomBytes(40).toString('hex')
+  const verificationToken = crypto.randomBytes(40).toString("hex");
 
-  const user = await User.create({ email, name, password, role, verificationToken });
+  const user = await User.create({
+    email,
+    name,
+    password,
+    role,
+    verificationToken,
+  });
 
-/*   // Create a user token object with specific user info
+  /*   // Create a user token object with specific user info
   const tokenUser = createTokenUser(user);
 
   // const token = createJWT({ payload: tokenUser });
@@ -31,7 +37,10 @@ const register = async (req, res) => {
   res.status(StatusCodes.CREATED).json({ user: tokenUser }); */
 
   // Send verification token back, only while testing in postman
-  res.status(StatusCodes.CREATED).json({msg: "Success! please check your email to verify your account!", verificationToken: user.verificationToken})
+  res.status(StatusCodes.CREATED).json({
+    msg: "Success! please check your email to verify your account!",
+    verificationToken: user.verificationToken,
+  });
 };
 
 const login = async (req, res) => {
@@ -57,8 +66,10 @@ const login = async (req, res) => {
     );
   }
 
-  if (!user.isVerified){
-    throw new CustomError.UnauthenticatedError('Account is not verified, please verify your account!');
+  if (!user.isVerified) {
+    throw new CustomError.UnauthenticatedError(
+      "Account is not verified, please verify your account!"
+    );
   }
 
   const tokenUser = createTokenUser(user);
@@ -79,4 +90,26 @@ const logout = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: "logout user" });
 };
 
-module.exports = { register, login, logout };
+const verifyEmail = async (req, res) => {
+  const { verificationToken, email } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user) {
+    throw new CustomError.UnauthenticatedError("Verification faild!");
+  }
+
+  if(verificationToken !== user.verificationToken){
+    throw new CustomError.UnauthenticatedError("Verification faild!");
+  }
+
+  user.isVerified = true
+  user.verified = Date.now()
+  user.verificationToken = ""
+
+  await user.save()
+
+  res.status(StatusCodes.OK).json({msg:"Email verified!"});
+};
+
+module.exports = { register, login, logout, verifyEmail };
