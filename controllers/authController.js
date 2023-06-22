@@ -3,6 +3,7 @@ const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
 const { attachCookiesToResponse, createTokenUser } = require("../utils");
 const crypto = require("crypto");
+const sendEmail = require("../utils/sendEmail");
 
 const register = async (req, res) => {
   // Used unique in user model instead
@@ -36,10 +37,11 @@ const register = async (req, res) => {
   // Send tokenUser object instead of the whole user object
   res.status(StatusCodes.CREATED).json({ user: tokenUser }); */
 
+  await sendEmail();
+
   // Send verification token back, only while testing in postman
   res.status(StatusCodes.CREATED).json({
     msg: "Success! please check your email to verify your account!",
-    verificationToken: user.verificationToken,
   });
 };
 
@@ -99,17 +101,17 @@ const verifyEmail = async (req, res) => {
     throw new CustomError.UnauthenticatedError("Verification faild!");
   }
 
-  if(verificationToken !== user.verificationToken){
+  if (verificationToken !== user.verificationToken) {
     throw new CustomError.UnauthenticatedError("Verification faild!");
   }
 
-  user.isVerified = true
-  user.verified = Date.now()
-  user.verificationToken = ""
+  user.isVerified = true;
+  user.verified = Date.now();
+  user.verificationToken = "";
 
-  await user.save()
+  await user.save();
 
-  res.status(StatusCodes.OK).json({msg:"Email verified!"});
+  res.status(StatusCodes.OK).json({ msg: "Email verified!" });
 };
 
 module.exports = { register, login, logout, verifyEmail };
