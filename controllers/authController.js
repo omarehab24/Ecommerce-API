@@ -1,9 +1,8 @@
 const User = require("../models/User");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
-const { attachCookiesToResponse, createTokenUser } = require("../utils");
+const { attachCookiesToResponse, createTokenUser, sendVerificationEmail } = require("../utils");
 const crypto = require("crypto");
-const sendEmail = require("../utils/sendEmail");
 
 const register = async (req, res) => {
   // Used unique in user model instead
@@ -37,7 +36,9 @@ const register = async (req, res) => {
   // Send tokenUser object instead of the whole user object
   res.status(StatusCodes.CREATED).json({ user: tokenUser }); */
 
-  await sendEmail();
+  const origin = "http://localhost:3000"
+
+  await sendVerificationEmail({name: user.name, email: user.email, verificationToken: user.verificationToken, origin});
 
   // Send verification token back, only while testing in postman
   res.status(StatusCodes.CREATED).json({
