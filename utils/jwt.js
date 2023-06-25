@@ -14,19 +14,20 @@ const attachCookiesToResponse = ({ res, userObj, refreshToken }) => {
   const refreshTokenJWT = createJWT({ payload: { userObj, refreshToken } });
 
   const oneDay = 24 * 60 * 60 * 1000;
+  const longerExpiration = oneDay * 30;
 
   res.cookie("accessToken", accessTokenJWT, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     signed: true,
-    maxAge: 1000,
-  });
+    expires: new Date(Date.now() + oneDay),
+});
 
   res.cookie("refreshToken", refreshTokenJWT, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     signed: true,
-    expires: new Date(Date.now() + oneDay),
+    expires: new Date(Date.now() + longerExpiration),
   });
 };
 
