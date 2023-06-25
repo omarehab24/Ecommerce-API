@@ -1,7 +1,12 @@
 const User = require("../models/User");
+const Token = require("../models/Token");
 const { StatusCodes } = require("http-status-codes");
 const CustomError = require("../errors");
-const { attachCookiesToResponse, createTokenUser, sendVerificationEmail } = require("../utils");
+const {
+  attachCookiesToResponse,
+  createTokenUser,
+  sendVerificationEmail,
+} = require("../utils");
 const crypto = require("crypto");
 
 const register = async (req, res) => {
@@ -36,9 +41,14 @@ const register = async (req, res) => {
   // Send tokenUser object instead of the whole user object
   res.status(StatusCodes.CREATED).json({ user: tokenUser }); */
 
-  const origin = "http://localhost:3000"
+  const origin = "http://localhost:3000";
 
-  await sendVerificationEmail({name: user.name, email: user.email, verificationToken: user.verificationToken, origin});
+  await sendVerificationEmail({
+    name: user.name,
+    email: user.email,
+    verificationToken: user.verificationToken,
+    origin,
+  });
 
   // Send verification token back, only while testing in postman
   res.status(StatusCodes.CREATED).json({
@@ -77,7 +87,41 @@ const login = async (req, res) => {
 
   const tokenUser = createTokenUser(user);
 
-  attachCookiesToResponse({ res, userObj: tokenUser });
+  let refreshToken = "";
+
+  // When user has already logged in before
+  const existingToken = await Token.findOne({ user: user._id });
+
+  if (existingToken) {
+    const { isValid } = existingToken;
+    if (!isValid) {
+      throw new CustomError.UnauthenticatedError("Invalid Credentials!");
+    }
+
+    refreshToken = existingToken.refreshToken;
+
+    attachCookiesToResponse({ res, userObj: tokenUser, refreshToken });
+
+    res.status(StatusCodes.OK).json({ user: tokenUser });
+
+    return;
+  }
+
+  // When user is logining in for the first time
+  refreshToken = crypto.randomBytes(40).toString("hex");
+
+  const userAgent = req.headers["user-agent"];
+  const ip = req.ip;
+  const userToken = {
+    refreshToken,
+    ip,
+    userAgent,
+    user: user._id,
+  };
+
+  await Token.create(userToken);
+
+  attachCookiesToResponse({ res, userObj: tokenUser, refreshToken });
 
   // console.log(req.signedCookies);
   // console.log(req.cookies);
