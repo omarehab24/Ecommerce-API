@@ -34,6 +34,12 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   verified: Date,
+  passwordToken: {
+    type: String,
+  },
+  passwordTokenExpirationDate: {
+    type: Date,
+  },
 });
 
 // Encryting Passwords before the document is saved

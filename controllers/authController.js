@@ -6,6 +6,8 @@ const {
   attachCookiesToResponse,
   createTokenUser,
   sendVerificationEmail,
+  sendResetPasswordEmail,
+  createHash
 } = require("../utils");
 const crypto = require("crypto");
 
@@ -107,7 +109,7 @@ const login = async (req, res) => {
     return;
   }
 
-  // When user is logining in for the first time
+  // When user is logging in for the first time
   refreshToken = crypto.randomBytes(40).toString("hex");
 
   const userAgent = req.headers["user-agent"];
@@ -130,7 +132,7 @@ const login = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  await Token.findOneAndDelete({user: req.user.userID})
+  await Token.findOneAndDelete({ user: req.user.userID });
 
   res.cookie("accessToken", "logout", {
     httpOnly: true,
@@ -167,4 +169,70 @@ const verifyEmail = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: "Email verified!" });
 };
 
-module.exports = { register, login, logout, verifyEmail };
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new CustomError.BadRequestError("Please provide a valid email!");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (user) {
+    const passwordToken = crypto.randomBytes(70).toString("hex");
+
+    const origin = "http://localhost:3000";
+    await sendResetPasswordEmail({
+      name: user.name,
+      email: user.email,
+      token: passwordToken,
+      origin,
+    });
+
+    const tenMinutes = 1000 * 60 * 10;
+    const passwordTokenExpirationDate = new Date(Date.now() + tenMinutes);
+
+    user.passwordToken = createHash(passwordToken);
+    user.passwordTokenExpirationDate = passwordTokenExpirationDate;
+    await user.save();
+  }
+
+  res
+    .status(StatusCodes.OK)
+    .json({ msg: "Please check your email to reset your password!" });
+};
+
+const resetPassword = async (req, res) => {
+  const { token, email, password } = req.body;
+
+  if (!email || !password || !token) {
+    throw new CustomError.BadRequestError("Please provide all values!");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (user) {
+    const currentDate = new Date();
+
+    if (
+      user.passwordToken === createHash(token) &&
+      user.passwordTokenExpirationDate > currentDate
+    ) {
+      user.password = password;
+      user.passwordToken = null;
+      user.passwordTokenExpirationDate = null;
+      await user.save();
+    }
+  }
+
+  res.status(StatusCodes.OK).json({ msg: "resetPassword" });
+};
+
+module.exports = {
+  register,
+  login,
+  logout,
+  verifyEmail,
+  resetPassword,
+  forgotPassword,
+};
