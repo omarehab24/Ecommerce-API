@@ -15,7 +15,7 @@ const sendResetPasswordEmail = async ({
 
   const resetPasswordEmail = {
     to: email, // Change to your recipient
-    from: "omarehabm@gmail.com", // Change to your verified sender
+    from: `${process.env.SENDGRID_SENDER}`, // Change to your verified sender
     subject: "Reset Password",
     html: `<h4>Hello, ${name}</h4>
     ${message}
