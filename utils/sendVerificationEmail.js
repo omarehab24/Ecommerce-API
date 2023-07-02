@@ -1,23 +1,29 @@
-const sendEmail = require("./sendEmail");
+const sgMail = require("@sendgrid/mail");
 
-const sendVerificationEmail = async ({
-  name,
-  email,
-  verificationToken,
-  origin,
-}) => {
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+const sendVerificationEmail = async({ name, email, verificationToken, origin }) => {
+
   const verifyEmail = `${origin}/user/verify-email?token=${verificationToken}&email=${email}`;
 
   const message = `<p>Please confirm your email by clicking the following link: 
   <a href="${verifyEmail}">Verify Email</a> </p>`;
 
-  return sendEmail({
-    to: email,
+  const confirmationEmail = {
+    to: email, // Change to your recipient
+    from: "omarehabm@gmail.com", // Change to your verified sender
     subject: "Email Confirmation.",
     html: `<h4>Hello, ${name}</h4>
     ${message}
     `,
+  };
+
+  sgMail
+  .send(confirmationEmail)
+  .catch((error) => {
+    console.error(error);
   });
-};
+
+}
 
 module.exports = sendVerificationEmail;
