@@ -43,7 +43,7 @@ const register = async (req, res) => {
   // Send tokenUser object instead of the whole user object
   res.status(StatusCodes.CREATED).json({ user: tokenUser }); */
 
-  const origin = "http://localhost:3000";
+  const origin = process.env.ORIGIN;
 
   await sendVerificationEmail({
     name: user.name,
@@ -181,7 +181,7 @@ const forgotPassword = async (req, res) => {
   if (user) {
     const passwordToken = crypto.randomBytes(70).toString("hex");
 
-    const origin = "http://localhost:3000";
+    const origin = process.env.ORIGIN;
     await sendResetPasswordEmail({
       name: user.name,
       email: user.email,
