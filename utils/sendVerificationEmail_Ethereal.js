@@ -1,12 +1,14 @@
 const sendEmail = require("./sendEmail");
 
-const sendVerificationEmail = async ({
+const sendVerificationEmail_Ethereal = async ({
   name,
   email,
   verificationToken,
   origin,
 }) => {
-  const verifyEmail = `${origin}/user/verify-email?token=${verificationToken}&email=${email}`;
+  // Front-end
+  // const verifyEmail = `${origin}/user/verify-email?token=${verificationToken}&email=${email}`;
+  const verifyEmail = `${origin}/api/v1/auth/verify-email?verificationToken=${verificationToken}&email=${email}`;
 
   const message = `<p>Please confirm your email by clicking the following link: 
   <a href="${verifyEmail}">Verify Email</a> </p>`;
@@ -20,4 +22,4 @@ const sendVerificationEmail = async ({
   });
 };
 
-module.exports = sendVerificationEmail;
+module.exports = sendVerificationEmail_Ethereal;
