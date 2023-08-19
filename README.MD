@@ -2,7 +2,8 @@
 
 An Ecommerce REST API following the MVC pattern, using: NodeJS, ExpressJS, JWT, Mongoose, MongoDB Atlas
   - Security packages: bcryptjs, cors, helmet, xss, express-rate-limit, express-mongo-sanitize
-  - Testing: Jest, Supertest, Postman
+  - Emailing: SendGrid
+  - Testing: Postman
   - Documentation: Docgen
   - Hosted on: Render
 
