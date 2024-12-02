@@ -5,8 +5,11 @@ A full-featured REST API for ecommerce applications, built with Node.js and Expr
 
 ## Base URL
 ```
-https://ecommerce-api-e7iw.onrender.com
+[https://ecommerce-api-e7iw.onrender.com](https://ecommerce-api-e7iw.onrender.com)
 ```
+
+## Endpoints Documentation
+[https://github.com/omarehab24/Ecommerce-API/blob/master/ecommerce-endpoints-documentation.md](https://github.com/omarehab24/Ecommerce-API/blob/master/ecommerce-endpoints-documentation.md)
 
 ## Key Features
 - **Authentication & Authorization**: Complete user management with JWT-based authentication
@@ -20,7 +23,7 @@ https://ecommerce-api-e7iw.onrender.com
 - **Database**: MongoDB Atlas with Mongoose ODM
 - **Authentication**: JSON Web Tokens (JWT)
 - **Media Storage**: Cloudinary for image hosting
-- **Email Service**: SendGrid for transactional emails
+- **Email Service**: Nodemailer with gmail SMTP for transactional emails
 - **Payment Gateway**: Stripe for order transactions
 
 ## Security Features
