@@ -1,6 +1,20 @@
 const CustomError = require("../errors");
 const { isTokenValid } = require("../utils/jwt");
 
+/**
+ * Middleware to authenticate user from different token sources
+ * 
+ * This middleware handles token authentication by:
+ * 1. Checking for token in Authorization header (Bearer token)
+ * 2. Checking for token in cookies
+ * 3. Validating the token
+ * 4. Attaching user information to the request object
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @throws {UnauthenticatedError} If no token is found or token is invalid
+ */
 const authenticateUser = async (req, res, next) => {
   let token;
   // check header
@@ -31,6 +45,16 @@ const authenticateUser = async (req, res, next) => {
   }
 };
 
+/**
+ * Middleware to authorize user roles for specific routes
+ * 
+ * Creates a middleware function that checks if the user's role
+ * is included in the allowed roles for a specific route
+ * 
+ * @param {...string} roles - List of roles allowed to access the route
+ * @returns {Function} Express middleware function for role-based authorization
+ * @throws {UnauthorizedError} If user's role is not in the allowed roles
+ */
 const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

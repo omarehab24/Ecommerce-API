@@ -1,3 +1,15 @@
+/**
+ * @fileoverview Authentication Controller
+ * Handles all authentication-related operations including user registration,
+ * login, logout, email verification, and password reset functionality.
+ * 
+ * This controller implements security best practices including:
+ * - Email verification
+ * - Secure password reset flow
+ * - JWT-based authentication with cookies
+ * - Role-based access control
+ */
+
 const User = require("../models/User");
 const Token = require("../models/Token");
 const { StatusCodes } = require("http-status-codes");
@@ -10,7 +22,22 @@ const {
   createHash
 } = require("../utils");
 const crypto = require("crypto");
+const config = require("../utils/config");
+const origin = config.ORIGIN;
 
+/**
+ * Register a new user
+ * @async
+ * @function register
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - User's email
+ * @param {string} req.body.name - User's name
+ * @param {string} req.body.password - User's password
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns created user with verification email sent
+ * @throws {CustomError.BadRequestError} - If email already exists
+ */
 const register = async (req, res) => {
   // Used unique in user model instead
   /*     const {email} = req.body
@@ -34,16 +61,14 @@ const register = async (req, res) => {
     verificationToken,
   });
 
-  /*   // Create a user token object with specific user info
-  const tokenUser = createTokenUser(user);
+  //    // Create a user token object with specific user info
+  // const tokenUser = createTokenUser(user);
 
-  // const token = createJWT({ payload: tokenUser });
-  attachCookiesToResponse({ res, userObj: tokenUser });
+  // // const token = createJWT({ payload: tokenUser });
+  // attachCookiesToResponse({ res, userObj: tokenUser });
 
-  // Send tokenUser object instead of the whole user object
-  res.status(StatusCodes.CREATED).json({ user: tokenUser }); */
-
-  const origin = process.env.ORIGIN;
+  // // Send tokenUser object instead of the whole user object
+  // res.status(StatusCodes.CREATED).json({ user: tokenUser });
 
   await sendVerificationEmail({
     name: user.name,
@@ -58,6 +83,55 @@ const register = async (req, res) => {
   });
 };
 
+/**
+ * Test registration endpoint for development
+ * @async
+ * @function testRegister
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns created user with auth token
+ */
+const testRegister = async (req, res) => {
+
+  const { email, name, password } = req.body;
+
+  const isFirstAccount = (await User.countDocuments({})) === 0;
+  const role = isFirstAccount ? "admin" : "user";
+
+  const verificationToken = crypto.randomBytes(40).toString("hex");
+
+  const user = await User.create({
+    email,
+    name,
+    password,
+    role,
+    verificationToken,
+  });
+
+     // Create a user token object with specific user info
+  const tokenUser = createTokenUser(user);
+  
+  // const token = createJWT({ payload: tokenUser });
+  attachCookiesToResponse({ res, userObj: tokenUser });
+
+  // Send tokenUser object instead of the whole user object
+  res.status(StatusCodes.CREATED).json({ user: tokenUser });
+
+};
+
+/**
+ * Authenticate user and create session
+ * @async
+ * @function login
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - User's email
+ * @param {string} req.body.password - User's password
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns user data and sets authentication cookie
+ * @throws {CustomError.UnauthenticatedError} - If invalid credentials
+ * @throws {CustomError.UnauthenticatedError} - If email not verified
+ */
 const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -89,9 +163,8 @@ const login = async (req, res) => {
 
   const tokenUser = createTokenUser(user);
 
-  let refreshToken = "";
-
   // When user has already logged in before
+  let refreshToken = "";
   const existingToken = await Token.findOne({ user: user._id });
 
   if (existingToken) {
@@ -103,6 +176,9 @@ const login = async (req, res) => {
     refreshToken = existingToken.refreshToken;
 
     attachCookiesToResponse({ res, userObj: tokenUser, refreshToken });
+
+    // console.log(req.signedCookies);
+    // console.log(req.cookies);
 
     res.status(StatusCodes.OK).json({ user: tokenUser });
 
@@ -122,7 +198,7 @@ const login = async (req, res) => {
   };
 
   await Token.create(userToken);
-
+  
   attachCookiesToResponse({ res, userObj: tokenUser, refreshToken });
 
   // console.log(req.signedCookies);
@@ -131,6 +207,14 @@ const login = async (req, res) => {
   res.status(StatusCodes.OK).json({ user: tokenUser });
 };
 
+/**
+ * End user session and clear authentication cookie
+ * @async
+ * @function logout
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns success message
+ */
 const logout = async (req, res) => {
   await Token.findOneAndDelete({ user: req.user.userID });
 
@@ -147,8 +231,19 @@ const logout = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: "User logged out!" });
 };
 
+/**
+ * Verify user's email address
+ * @async
+ * @function verifyEmail
+ * @param {Object} req - Express request object
+ * @param {Object} req.query - Query parameters
+ * @param {string} req.query.token - Verification token
+ * @param {string} req.query.email - User's email
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns verification success message
+ * @throws {CustomError.UnauthenticatedError} - If invalid verification credentials
+ */
 const verifyEmail = async (req, res) => {
-  // const { verificationToken, email } = req.body;
   const { verificationToken, email } = req.query;
 
   const user = await User.findOne({ email });
@@ -170,6 +265,16 @@ const verifyEmail = async (req, res) => {
   res.status(StatusCodes.OK).json({ msg: "Email verified!" });
 };
 
+/**
+ * Initiate password reset process
+ * @async
+ * @function forgotPassword
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.email - User's email
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns success message and sends reset email
+ */
 const forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -182,7 +287,6 @@ const forgotPassword = async (req, res) => {
   if (user) {
     const passwordToken = crypto.randomBytes(70).toString("hex");
 
-    const origin = process.env.ORIGIN;
     await sendResetPasswordEmail({
       name: user.name,
       email: user.email,
@@ -203,10 +307,60 @@ const forgotPassword = async (req, res) => {
     .json({ msg: "Please check your email to reset your password!" });
 };
 
+/**
+ * Test endpoint for password reset flow
+ * @async
+ * @function testForgotPassword
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns password reset token
+ */
+const testForgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new CustomError.BadRequestError("Please provide a valid email!");
+  }
+
+  const user = await User.findOne({ email });
+
+  if (user) {
+    const passwordToken = crypto.randomBytes(70).toString("hex");
+
+    const tenMinutes = 1000 * 60 * 10;
+    const passwordTokenExpirationDate = new Date(Date.now() + tenMinutes);
+
+    user.passwordToken = createHash(passwordToken);
+    user.passwordTokenExpirationDate = passwordTokenExpirationDate;
+    await user.save();
+  }
+
+  res
+    .status(StatusCodes.OK)
+    .json({ msg: "Please check your email to reset your password!" });
+};
+
+/**
+ * Reset user's password using reset token
+ * @async
+ * @function resetPassword
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body
+ * @param {string} req.body.token - Password reset token
+ * @param {string} req.body.email - User's email
+ * @param {string} req.body.password - New password
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} - Returns success message
+ * @throws {CustomError.UnauthenticatedError} - If invalid reset token
+ */
 const resetPassword = async (req, res) => {
   const { token, email, password } = req.body;
 
-  if (!email || !password || !token) {
+  if (!token) {
+    throw new CustomError.UnauthorizedError("Unauthenticated!");
+  }
+
+  if (!email || !password) {
     throw new CustomError.BadRequestError("Please provide all values!");
   }
 
@@ -226,14 +380,16 @@ const resetPassword = async (req, res) => {
     }
   }
 
-  res.status(StatusCodes.OK).json({ msg: "resetPassword" });
+  res.status(StatusCodes.OK).json({ msg: "Password successfully reset!" });
 };
 
 module.exports = {
   register,
+  testRegister,
   login,
   logout,
   verifyEmail,
-  resetPassword,
   forgotPassword,
+  testForgotPassword,
+  resetPassword,
 };

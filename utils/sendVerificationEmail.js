@@ -1,32 +1,52 @@
-const sgMail = require("@sendgrid/mail");
+const sendEmail = require("./sendEmail");
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-
-const sendVerificationEmail = async({ name, email, verificationToken, origin }) => {
-
-  // Specific route in the front-end
+/**
+ * Sends an email verification link to a user
+ * 
+ * Generates and sends an email with a unique verification token,
+ * allowing users to confirm their email address.
+ * 
+ * @async
+ * @function sendVerificationEmail
+ * @param {Object} options - Email configuration options
+ * @param {string} options.name - User's name
+ * @param {string} options.email - User's email address
+ * @param {string} options.verificationToken - Unique email verification token
+ * @param {string} options.origin - Application origin/base URL
+ * 
+ * @returns {Promise<Object>} Result of the email sending operation
+ * 
+ * @throws {Error} If email sending fails
+ * 
+ * @example
+ * await sendVerificationEmail({
+ *   name: 'John Doe',
+ *   email: 'john@example.com',
+ *   verificationToken: 'unique-verification-token',
+ *   origin: 'https://myapp.com'
+ * })
+ */
+const sendVerificationEmail = async ({
+  name,
+  email,
+  verificationToken,
+  origin,
+}) => {
+  // Front-end
   // const verifyEmail = `${origin}/user/verify-email?token=${verificationToken}&email=${email}`;
-  // Using verify-email route in the server + Modified the route's method to GET + Data gets extracted from req.query
   const verifyEmail = `${origin}/api/v1/auth/verify-email?verificationToken=${verificationToken}&email=${email}`;
 
-  const message = `<p>Please confirm your email by clicking the following link: 
-  <a href="${verifyEmail}">Verify Email</a> </p>`;
+  const message = `<div style="border: 1px solid #ddd; padding: 15px; margin: 15px;">
+    <h4>Hello, ${name}</h4>
+    <p>Please confirm your email by clicking the following link: 
+    <a href="${verifyEmail}">Verify Email</a></p>
+  </div>`;
 
-  const confirmationEmail = {
-    to: email, // Change to your recipient
-    from: `${process.env.SENDGRID_SENDER}`, // Change to your verified sender
-    subject: "Email Confirmation.",
-    html: `<h4>Hello, ${name}</h4>
-    ${message}
-    `,
-  };
-
-  sgMail
-  .send(confirmationEmail)
-  .catch((error) => {
-    console.error(error);
+  return sendEmail({
+    to: email,
+    subject: "Email Confirmation",
+    html: message
   });
-
-}
+};
 
 module.exports = sendVerificationEmail;

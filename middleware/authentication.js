@@ -3,6 +3,20 @@ const { isTokenValid } = require("../utils");
 const Token = require("../models/Token");
 const { attachCookiesToResponse } = require("../utils");
 
+/**
+ * Middleware to authenticate user based on access and refresh tokens
+ * 
+ * This middleware handles token validation and user authentication:
+ * 1. Checks for an access token in signed cookies
+ * 2. If no access token, validates the refresh token
+ * 3. Verifies token against stored token in database
+ * 4. Attaches user information to the request object
+ * 
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ * @throws {UnauthenticatedError} If token is invalid or not found
+ */
 const authenticateUser = async (req, res, next) => {
   const { refreshToken, accessToken } = req.signedCookies;
 
@@ -66,4 +80,5 @@ const authorizePermissions = (...roles) => {
     next();
   };
 };
+
 module.exports = { authenticateUser, authorizePermissions };

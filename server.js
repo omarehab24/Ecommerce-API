@@ -1,14 +1,20 @@
+/**
+ * @fileoverview Server entry point for the E-commerce API
+ * This file initializes the Express server and starts listening for incoming requests.
+ * The server configuration is loaded from the config utility module.
+ * 
+ * The actual Express application setup and middleware configuration
+ * is handled in app.js to maintain separation of concerns.
+ */
+
 const app = require("./app");
-const connectDB = require("./db/connect");
-const port = process.env.PORT || 5000;
+const config = require("./utils/config");
 
-const start = async () => {
-  try {
-    await connectDB(process.env.MONGO_URI);
-    app.listen(port, console.log(`Listening on port ${port}...`));
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-start();
+/**
+ * Start the server and listen for incoming connections
+ * The port number is configured in the environment variables
+ * and accessed through the config utility
+ */
+app.listen(config.PORT, () =>
+  console.log(`Listening on port ${config.PORT}...`)
+);
