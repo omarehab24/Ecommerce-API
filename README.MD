@@ -8,7 +8,7 @@ A full-featured REST API for ecommerce applications, built with Node.js and Expr
 
 
 ## Endpoints Documentation
-[https://github.com/omarehab24/Ecommerce-API/blob/master/ecommerce-endpoints-documentation.md](https://github.com/omarehab24/Ecommerce-API/blob/master/ecommerce-endpoints-documentation.md)
+[https://github.com/omarehab24/Ecommerce-API/blob/master/endpoints-documentation.md](https://github.com/omarehab24/Ecommerce-API/blob/master/endpoints-documentation.md)
 
 ## Key Features
 - **Authentication & Authorization**: Complete user management with JWT-based authentication
@@ -74,6 +74,6 @@ A full-featured REST API for ecommerce applications, built with Node.js and Expr
 ## Error Handling
 The API uses standard HTTP status codes and returns detailed error messages in JSON format.
 
-For detailed endpoint documentation and request/response examples, please refer to the specific endpoint sections below.
+For detailed endpoint documentation and request/response examples, please refer to the specific endpoint documentation.
 
 
