@@ -17,6 +17,8 @@ const helmet = require("helmet");
 const xss = require("xss-clean");
 const mongoSanitize = require("express-mongo-sanitize");
 const cookieParser = require("cookie-parser");
+const swaggerUI = require("swagger-ui-express");
+
 
 const connectDB = require("./db/connect");
 const config = require("./utils/config");
@@ -27,6 +29,7 @@ const reviewRouter = require("./routes/reviewRoutes");
 const orderRouter = require("./routes/orderRoutes");
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
+const swaggerJson = require("../api-doc-swagger-openapi.json");
 
 // Connect to MongoDB database
 connectDB();
@@ -45,7 +48,6 @@ connectDB();
  * - rateLimiter: Limit repeated requests to public APIs
  */
 app.set("trust proxy", 1);
-app.use(express.static("./public"));
 app.use(express.json());
 app.use(cors());
 app.use(
@@ -57,8 +59,12 @@ app.use(
 app.use(helmet());
 app.use(xss());
 app.use(mongoSanitize());
-// Sign the cookies
-app.use(cookieParser(config.JWT_SECRET));
+app.use(cookieParser(config.JWT_SECRET)); // Sign the cookies
+const options = {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: "E-commerce API Documentation",
+};
+app.use("/", swaggerUI.serve, swaggerUI.setup(swaggerJson, options));
 
 /**
  * Application Routes
